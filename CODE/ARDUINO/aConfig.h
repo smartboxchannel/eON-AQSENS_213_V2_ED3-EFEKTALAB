@@ -24,7 +24,10 @@
 
 
 //#define MY_DEBUG
-#define LANG_RU // If this is not used the English localization will be displayed.
+//#define LANG_RU // If this is not used the English localization will be displayed.
+#ifndef LANG_RU
+#define LANG_EN
+#endif
 #define SN "EFEKTA Air Quality Sensor"
 #define SV "0.93"
 #define MY_RADIO_NRF5_ESB
