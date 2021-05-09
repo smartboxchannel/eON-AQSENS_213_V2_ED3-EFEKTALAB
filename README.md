@@ -10,6 +10,8 @@ Wireless, battery-operated Mini air quality and weather station. Air quality, te
 
 (New FCC CE RoHs Certificated Compact (18.5×12.5×2mm) and Flexible ultra-low power wireless BLE 5.0 Module based on nRF52840 SoCs)
 
+#### SGP40: https://ali.ski/eZQog
+
 #### Don't donate to me, it doesn't work in this world: https://paypal.me/efektalab , just buy
 
 #### Sale: 
@@ -62,6 +64,8 @@ https://www.arduino.cc/en/Guide/PortableIDE
 ---
 
 ## Components (BOM):
+
+SGP40: https://ali.ski/eZQog
 
 MINEW MS88SF3 FCC CE RoHs Certificated wireless module nRF52840 SoCs - https://ali.ski/9LnWZ (1 pc - $7.75)
 
