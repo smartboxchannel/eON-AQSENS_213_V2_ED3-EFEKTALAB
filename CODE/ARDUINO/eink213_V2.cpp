@@ -130,7 +130,7 @@ void Epd::WaitUntilIdle(void)
   while (1) {     //LOW: idle, HIGH: busy
     if (DigitalRead(busy_pin) == 0)
       break;
-    DelayMs(200);
+    DelayMs(100);
   }
 }
 
@@ -339,11 +339,11 @@ void Epd::Display(const unsigned char* frame_buffer,  char mode)
 void Epd::Reset(void)
 {
   DigitalWrite(reset_pin, HIGH);
-  DelayMs(110);
+  DelayMs(200);
   DigitalWrite(reset_pin, LOW);                //module reset
-  DelayMs(15);
+  DelayMs(10);
   DigitalWrite(reset_pin, HIGH);
-  DelayMs(110);
+  DelayMs(200);
 }
 
 
@@ -493,7 +493,7 @@ void Epd::Sleep()
 {
   SendCommand(0x10); //enter deep sleep
   SendData(0x01);
-  DelayMs(110);
+  DelayMs(100);
 }
 
 /* END OF FILE */

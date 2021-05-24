@@ -33,9 +33,9 @@
 #include "eink213_V2.h"
 #include "imagedata.h"
 #include "einkpaint.h"
+#include "Adafruit_SGP40.h" // !!!Non-standard constants are used for the air quality algorithm!!!
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
-#include "Adafruit_SGP40.h" // !!!Non-standard constants are used for the air quality algorithm!!!
 // ##############################################################################################################
 
 
@@ -442,6 +442,7 @@ void presentation()
 void setup()
 {
   config_Happy_node();
+  CORE_DEBUG(PSTR("MyS: CONFIG HAPPY NODE\n"));
   if (flag_nogateway_mode == false) {
     epd.Init(PART);
     epd.Clear(colorPrint, PART);
@@ -470,7 +471,7 @@ void setup()
     epd.DisplayPart(paint.GetImage());
     epd.Sleep();
   }
-  CORE_DEBUG(PSTR("MyS: CONFIG HAPPY NODE\n"));
+
   CORE_DEBUG(PSTR("MyS: SEND CONFIG PARAMETERS\n"));
   sendAfterResTask = true;
   sleepTimeCount = SLEEP_TIME;
@@ -516,7 +517,7 @@ void loop() {
             }
             if ((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) {
               if (updateinkclear == false) {
-                epd.Clear(colorPrint, FULL);
+                epd.Clear(colorPrint, PART);
                 updateinkclear = true;
               }
             }
@@ -529,7 +530,7 @@ void loop() {
             }
             if ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) {
               if (updateinkclear == false) {
-                epd.Clear(colorPrint, FULL);
+                epd.Clear(colorPrint, PART);
                 updateinkclear = true;
               }
             }
@@ -542,7 +543,7 @@ void loop() {
             }
             if ((millis() - previousMillis > 11000) && (millis() - previousMillis <= 12000)) {
               if (updateinkclear == false) {
-                epd.Clear(colorPrint, FULL);
+                epd.Clear(colorPrint, PART);
                 updateinkclear = true;
               }
             }
@@ -555,7 +556,7 @@ void loop() {
             }
             if (millis() - previousMillis > 15000) {
               if (updateinkclear == false) {
-                epd.Clear(colorPrint, FULL);
+                epd.Clear(colorPrint, PART);
                 updateinkclear = true;
                 buttIntStatus = 0;
                 change = true;
@@ -569,8 +570,6 @@ void loop() {
             {
               einkPushEnd();
               reseteinkset();
-              button_flag = false;
-              buttIntStatus = 0;
               if (colorPrint == true) {
                 colorPrint = false;
                 colorChange(colorPrint);
@@ -578,23 +577,37 @@ void loop() {
                 colorPrint = true;
                 colorChange(colorPrint);
               }
-              change = true;
-              sleepTimeCount = SLEEP_TIME;
+              sleepTimeCount = 0;
+              readSensor();
+              change = false;
+              sendData();
+              wait(20);
+              eInkUpdate();
+              change = false;
+              button_flag = false;
+              buttIntStatus = 0;
+              nosleep = false;
             }
             if ((millis() - previousMillis > 4000) && (millis() - previousMillis <= 7000) && button_flag == true)
             {
               einkPushEnd();
               reseteinkset();
-              button_flag = false;
-              buttIntStatus = 0;
               transportReInitialise();
               wait(shortWait);
               resetBeforePresent();
               presentation();
               transportDisable();
               wait(shortWait);
-              change = true;
-              sleepTimeCount = SLEEP_TIME;
+              sleepTimeCount = 0;
+              readSensor();
+              change = false;
+              sendData();
+              wait(20);
+              eInkUpdate();
+              change = false;
+              button_flag = false;
+              buttIntStatus = 0;
+              nosleep = false;
             }
             if ((millis() - previousMillis > 8000) && (millis() - previousMillis <= 11000) && button_flag == true)
             {
@@ -618,21 +631,28 @@ void loop() {
             if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) || ((millis() - previousMillis > 11000) && (millis() - previousMillis <= 12000)) || ((millis() - previousMillis > 15000)) && button_flag == true)
             {
               wdt_nrfReset();
-              change = true;
-              sleepTimeCount = SLEEP_TIME;
               reseteinkset();
+              sleepTimeCount = 0;
+              readSensor();
+              change = false;
+              sendData();
+              wait(20);
+              eInkUpdate();
+              change = false;
               button_flag = false;
               buttIntStatus = 0;
+              nosleep = false;
             }
           }
         } else {
           sleepTimeCount++;
           if (sleepTimeCount >= SLEEP_TIME) {
             sleepTimeCount = 0;
+
             readSensor();
             if (change == true) {
               sendData();
-              wait(100);
+              wait(20);
               eInkUpdate();
               change = false;
             }
@@ -651,10 +671,16 @@ void loop() {
         if (millis() - configMillis > 20000) {
           transportDisable(); // вроде потому что один фиг сразу в сон? ....не все таки раскоментить потому что сон не сразу а сначала обновление экрана
           configMode = false;
+          sleepTimeCount = 0;
+          readSensor();
+          change = false;
+          sendData();
+          wait(20);
+          eInkUpdate();
+          change = false;
           button_flag = false;
           buttIntStatus = 0;
-          change = true;
-          sleepTimeCount = SLEEP_TIME;
+          nosleep = false;
         }
         wdt_nrfReset();
       }
@@ -673,7 +699,7 @@ void loop() {
           }
           if ((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) {
             if (updateinkclear == false) {
-              epd.Clear(colorPrint, FULL);
+              epd.Clear(colorPrint, PART);
               updateinkclear = true;
             }
           }
@@ -686,7 +712,7 @@ void loop() {
           }
           if ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) {
             if (updateinkclear == false) {
-              epd.Clear(colorPrint, FULL);
+              epd.Clear(colorPrint, PART);
               updateinkclear = true;
             }
           }
@@ -699,7 +725,7 @@ void loop() {
           }
           if (millis() - previousMillis > 11000) {
             if (updateinkclear == false) {
-              epd.Clear(colorPrint, FULL);
+              epd.Clear(colorPrint, PART);
               updateinkclear = true;
               buttIntStatus = 0;
               change = true;
@@ -713,8 +739,6 @@ void loop() {
           {
             einkPushEnd();
             reseteinkset();
-            button_flag = false;
-            buttIntStatus = 0;
             if (colorPrint == true) {
               colorPrint = false;
               colorChange(colorPrint);
@@ -722,8 +746,16 @@ void loop() {
               colorPrint = true;
               colorChange(colorPrint);
             }
-            change = true;
-            sleepTimeCount = SLEEP_TIME;
+            sleepTimeCount = 0;
+            readSensor();
+            change = false;
+            sendData();
+            wait(20);
+            eInkUpdate();
+            change = false;
+            button_flag = false;
+            buttIntStatus = 0;
+            nosleep = false;
           }
           if ((millis() - previousMillis > 4000) && (millis() - previousMillis <= 7000) && button_flag == true)
           {
@@ -737,7 +769,7 @@ void loop() {
             cpCount = 0;
             change = true;
             sleepTimeCount = SLEEP_TIME;
-            BATT_COUNT = BATT_TIME;
+            nosleep = false;
           }
           if ((millis() - previousMillis > 8000) && (millis() - previousMillis <= 11000) && button_flag == true)
           {
@@ -748,11 +780,17 @@ void loop() {
           if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) || ((millis() - previousMillis > 11000)) && button_flag == true)
           {
             wdt_nrfReset();
-            change = true;
-            sleepTimeCount = SLEEP_TIME;
             reseteinkset();
+            sleepTimeCount = 0;
+            readSensor();
+            change = false;
+            sendData();
+            wait(20);
+            eInkUpdate();
+            change = false;
             button_flag = false;
             buttIntStatus = 0;
+            nosleep = false;
           }
         }
 
@@ -869,6 +907,7 @@ void colorChange(bool flag) {
 
 void displayStart() {
   epd.Init(FULL);
+  epd.Clear(opposite_colorPrint, FULL);
   paint.SetWidth(122);
   paint.SetHeight(250);
   paint.SetRotate(ROTATE_180);
@@ -885,6 +924,7 @@ void displayStart() {
   // ###################################           Especially for            ################################### //
 #ifdef ESPECIALLY
   DrawImageWH(&paint, 8, 35, Especially, 105, 180, colorPrint);
+  epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
@@ -899,6 +939,7 @@ void displayStart() {
 #else
   DrawImageWH(&paint, 42, 71, IMAGE_ENCON, 48, 108, colorPrint);
 #endif
+  epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
@@ -916,8 +957,9 @@ void eInkUpdate() {
   displayPres(pressureSend);
   displayHum(humiditySend);
   display_Icons();
+  epd.Clear(opposite_colorPrint, PART);
   epd.DisplayPart(paint.GetImage());
-  epd.Clear(colorPrint, PART);
+  epd.Clear(opposite_colorPrint, PART);
   epd.DisplayPart(paint.GetImage());
   epd.Sleep();
 }
@@ -2328,15 +2370,14 @@ void reseteinkset() {
 void einkZeropush() {
   wdt_nrfReset();
   epd.Init(PART);
-  epd.Clear(colorPrint, FULL);
-  epd.Clear(colorPrint, FULL);
   paint.Clear(opposite_colorPrint);
 #ifdef LANG_RU
   DrawImageWH(&paint, 24, 71, IMAGE_COLOR, 48, 108, colorPrint);
 #else
   DrawImageWH(&paint, 24, 71, IMAGE_ECOLOR, 48, 108, colorPrint);
 #endif
-  epd.Display(paint.GetImage(), FULL);
+  epd.Clear(colorPrint, PART);
+  epd.Display(paint.GetImage(), PART);
 }
 
 
@@ -2356,7 +2397,7 @@ void einkOnepush() {
     DrawImageWH(&paint, 24, 71, IMAGE_ESEARCH, 48, 108, colorPrint);
 #endif
   }
-  epd.Display(paint.GetImage(), FULL);
+  epd.Display(paint.GetImage(), PART);
 
 }
 
@@ -2369,7 +2410,7 @@ void einkOnePluspush() {
 #else
   DrawImageWH(&paint, 24, 71, IMAGE_ECONF, 48, 108, colorPrint);
 #endif
-  epd.Display(paint.GetImage(), FULL);
+  epd.Display(paint.GetImage(), PART);
 }
 
 
@@ -2381,7 +2422,7 @@ void einkTwopush() {
 #else
   DrawImageWH(&paint, 24, 71, IMAGE_ERESET, 48, 108, colorPrint);
 #endif
-  epd.Display(paint.GetImage(), FULL);
+  epd.Display(paint.GetImage(), PART);
 }
 
 
@@ -2392,15 +2433,13 @@ void einkPushEnd() {
 #else
   DrawImageWH(&paint, 76, 71, IMAGE_EACTIV, 16, 108, colorPrint);
 #endif
-  epd.Display(paint.GetImage(), FULL);
+  epd.Display(paint.GetImage(), PART);
 }
 
 
 void reportTimeInk() {
   wdt_nrfReset();
   epd.Init(PART);
-  epd.Clear(colorPrint, FULL);
-  epd.Clear(colorPrint, FULL);
   paint.Clear(opposite_colorPrint);
 
 #ifdef LANG_RU
@@ -2508,7 +2547,8 @@ void reportTimeInk() {
         break;
     }
   }
-  epd.Display(paint.GetImage(), FULL);
+  epd.Clear(colorPrint, PART);
+  epd.Display(paint.GetImage(), PART);
   epd.Sleep();
   wait(2000);
 }
@@ -2517,8 +2557,6 @@ void reportTimeInk() {
 void reportBattInk() {
   wdt_nrfReset();
   epd.Init(PART);
-  epd.Clear(colorPrint, FULL);
-  epd.Clear(colorPrint, FULL);
   paint.Clear(opposite_colorPrint);
 
 #ifdef LANG_RU
@@ -2626,7 +2664,8 @@ void reportBattInk() {
         break;
     }
   }
-  epd.Display(paint.GetImage(), FULL);
+  epd.Clear(colorPrint, PART);
+  epd.Display(paint.GetImage(), PART);
   epd.Sleep();
   wait(2000);
 }
@@ -2640,21 +2679,24 @@ void bme_initAsleep() {
   if (! bme.begin(&Wire)) {
     while (1);
   }
+
   bme.setSampling(Adafruit_BME280::MODE_FORCED,
-                  Adafruit_BME280::SAMPLING_X1, // temperature
+                  Adafruit_BME280::SAMPLING_X1,  // temperature
                   Adafruit_BME280::SAMPLING_X1, // pressure
-                  Adafruit_BME280::SAMPLING_X1, // humidity
-                  Adafruit_BME280::FILTER_OFF   );
-  wait(500);
+                  Adafruit_BME280::SAMPLING_X1,  // humidity
+                  Adafruit_BME280::FILTER_OFF);
 }
 
 void readSGP() {
   checkFast++;
   bme.takeForcedMeasurement();
+  //wait(5);
   temperatureSend = bme.readTemperature();
   humiditySend = bme.readHumidity();
+  wait(10);
   sraw = sgp.measureRaw(temperatureSend, humiditySend);
   hwSleep(100);
+  //wait(10);
   voc_index = sgp.measureVocIndex(temperatureSend, humiditySend);
   sgp.heaterOff();
 
@@ -2670,12 +2712,13 @@ void readSGP() {
 
 
 void readSensor() {
-  wdt_nrfReset();
-  if (sendAfterResTask == true) {
-    change = true;
-  }
+  hwSleep(200);
+  //if (sendAfterResTask == true) {
+  //  change = true;
+  //}
 
   readSGP();
+
   if (abs(voc_index - old_voc_index) >= voc_index_Threshold) {
     old_voc_index = voc_index;
     change = true;
@@ -2751,14 +2794,15 @@ void readSensor() {
     readBatt();
     BATT_COUNT = 0;
   }
+  wdt_nrfReset();
 }
 
 
 void sendData() {
-  wdt_nrfReset();
+
   if (flag_nogateway_mode == false) {
     transportReInitialise();
-    wait(20);
+    wait(30);
     configSend();
 
     if (tch == true) {
@@ -2837,6 +2881,7 @@ void sendData() {
       presentation();
     }
     transportDisable();
+    wait(30);
 
     checkSent();
   } else {
@@ -2848,6 +2893,7 @@ void sendData() {
     fch = false;
     ach = false;
   }
+  wdt_nrfReset();
 }
 
 
@@ -2998,6 +3044,16 @@ void timeConf() {
   BATT_TIME = (battSend * 60 / timeSend);
 
   cpNom = (60 / timeSend);
+
+  CORE_DEBUG(PSTR("SLEEP_TIME: %d\n"), SLEEP_TIME);
+
+
+
+  SLEEP_TIME = (timeSend * minuteT / SLEEP_TIME_WDT);
+
+  BATT_TIME = (battSend * 60 / timeSend);
+
+  cpNom = (120 / timeSend);
 
   CORE_DEBUG(PSTR("SLEEP_TIME: %d\n"), SLEEP_TIME);
 }
