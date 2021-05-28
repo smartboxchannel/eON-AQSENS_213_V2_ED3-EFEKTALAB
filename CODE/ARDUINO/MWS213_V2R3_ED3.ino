@@ -628,7 +628,7 @@ void loop() {
               wait(1500);
               new_device();
             }
-            if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) || ((millis() - previousMillis > 11000) && (millis() - previousMillis <= 12000)) || ((millis() - previousMillis > 15000)) && button_flag == true)
+            if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000) && button_flag == true) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000) && button_flag == true) || ((millis() - previousMillis > 11000) && (millis() - previousMillis <= 12000) && button_flag == true) || ((millis() - previousMillis > 15000) && button_flag == true))
             {
               wdt_nrfReset();
               reseteinkset();
@@ -656,6 +656,7 @@ void loop() {
               eInkUpdate();
               change = false;
             }
+            nosleep = false;
           } else {
             readSGP();
             if (change == true) {
@@ -664,8 +665,8 @@ void loop() {
               eInkUpdate();
               change = false;
             }
+            nosleep = false;
           }
-          nosleep = false;
         }
       } else {
         if (millis() - configMillis > 20000) {
@@ -777,7 +778,7 @@ void loop() {
             wait(1500);
             new_device();
           }
-          if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000)) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000)) || ((millis() - previousMillis > 11000)) && button_flag == true)
+          if (((millis() - previousMillis > 3000) && (millis() - previousMillis <= 4000) && button_flag == true) || ((millis() - previousMillis > 7000) && (millis() - previousMillis <= 8000) && button_flag == true) || ((millis() - previousMillis > 11000) && button_flag == true))
           {
             wdt_nrfReset();
             reseteinkset();
@@ -923,12 +924,12 @@ void displayStart() {
 
   // ###################################           Especially for            ################################### //
 #ifdef ESPECIALLY
-  DrawImageWH(&paint, 8, 35, Especially, 105, 180, colorPrint);
+  DrawImageWH(&paint, 15, 35, Especially, 105, 180, colorPrint);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
-  hwSleep(3000);
+  hwSleep(7000);
   epd.Clear(opposite_colorPrint, PART);
   paint.Clear(opposite_colorPrint);
 #endif
@@ -2689,20 +2690,16 @@ void bme_initAsleep() {
 
 void readSGP() {
   checkFast++;
-  bme.takeForcedMeasurement();
-  //wait(5);
-  temperatureSend = bme.readTemperature();
-  humiditySend = bme.readHumidity();
-  wait(10);
+  //wait(10);
   sraw = sgp.measureRaw(temperatureSend, humiditySend);
-  hwSleep(100);
+  hwSleep(110);
   //wait(10);
   voc_index = sgp.measureVocIndex(temperatureSend, humiditySend);
   sgp.heaterOff();
 
   if (checkFast == fastView) {
     checkFast = 0;
-    if ((voc_index != 0) && (voc_index >= (old_voc_index + 25))) {
+    if ((voc_index != 0) && (voc_index >= (old_voc_index + 30))) {
       old_voc_index = voc_index;
       change = true;
       ach = true;
@@ -2712,10 +2709,18 @@ void readSGP() {
 
 
 void readSensor() {
-  hwSleep(200);
+  //hwSleep(200);
   //if (sendAfterResTask == true) {
   //  change = true;
   //}
+  checkFast = 0;
+  wait(5);
+  bme.takeForcedMeasurement();
+  wait(5);
+  temperatureSend = bme.readTemperature();
+  humiditySend = bme.readHumidity();
+  pressureSend = bme.readPressure();
+
 
   readSGP();
 
@@ -2724,8 +2729,6 @@ void readSensor() {
     change = true;
     ach = true;
   }
-
-  pressureSend = bme.readPressure();
 
   temperatureInt = round(temperatureSend);
   if (temperatureInt < 0) {
@@ -3147,7 +3150,7 @@ static __INLINE uint8_t battery_level_in_percent(const uint16_t mvolts)
 void lqSend() {
   if (lch == true) {
     check = send(sqMsg.set(nRFRSSI));
-    if (check = true) {
+    if (check == true) {
       lch = false;
     } else {
       wait(shortWait * 5);
@@ -3172,7 +3175,7 @@ void lqSend() {
     if (nRFRSSI != old_nRFRSSI) {
       lch = true;
       check = send(sqMsg.set(nRFRSSI));
-      if (check = true) {
+      if (check == true) {
         lch = false;
       } else {
         wait(shortWait * 5);

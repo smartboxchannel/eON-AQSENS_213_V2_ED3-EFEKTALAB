@@ -29,7 +29,7 @@
 #define LANG_EN
 #endif
 #define SN "EFEKTA Air Quality Sensor"
-#define SV "0.95"
+#define SV "0.96"
 #define MY_RADIO_NRF5_ESB
 #define MY_NRF5_ESB_PA_LEVEL (0x8UL)
 //#define MY_PASSIVE_NODE
