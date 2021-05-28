@@ -88,7 +88,7 @@ Waveshare 250x122 2,13 - https://ali.ski/D4eOVU (1pc - $12.3)
 
 FPC FFC 0.5mm connector socket 24 pin - https://ali.ski/lCBot0 (1 p - $0.77)
 
-Cell Holder CR2450 - https://ali.ski/gMd2Y (10 pcs - $2)
+Cell Holder CR2450 - https://ali.ski/VdotsA (20 pcs - $3)
 
 Micro Screws M1.4 3mm - https://ali.ski/gaFdO (100 pcs - $1)
 
