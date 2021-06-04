@@ -1,6 +1,5 @@
 # EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3
 
-### The author prohibits any subsequent commercial use of this project, its parts.
 
 Wireless, battery-operated Mini air quality and weather station. Air quality, temperature, humidity, pressure, weather forecast. Designed on the nRF52833, nRF52840 wireless radio modules. The temperature, humidity and pressure sensor BME280, air quality sensor SGP40 is used The device is powered by CR2477 battery. Power consumption when transmitting data is 8mA, in sleep mode is 35uA (see datasheet SGP40).
 
@@ -25,17 +24,17 @@ More info at http://efektalab.com/eink213_ed3
 ---
 ## Ver. A
 
-![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/main/IMAGES/a.png) 
+![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/release-2.3a/IMAGES/a.png) 
 
 
 
-![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/main/IMAGES/IMG_20210524_220731.jpg) 
+![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/release-2.3a/IMAGES/IMG_20210524_220731.jpg) 
 
 
-![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/main/IMAGES/IMG_20210524_220528.jpg) 
+![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/release-2.3a/IMAGES/IMG_20210524_220528.jpg) 
 
 
-![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blob/main/IMAGES/005.jpg) 
+![EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3 (MINI AIR QUALITY AND WEATHER STATION ON NRF52](https://github.com/smartboxchannel/EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3/blobrelease-2.3a/IMAGES/005.jpg) 
 
 
 ---
