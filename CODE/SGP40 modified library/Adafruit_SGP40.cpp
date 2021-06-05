@@ -28,7 +28,6 @@
 #include "Adafruit_SGP40.h"
 #include "Arduino.h"
 
-//#define I2C_DEBUG
 
 /*!
  *  @brief  Instantiates a new SGP40 class
@@ -65,35 +64,13 @@ boolean Adafruit_SGP40::begin(TwoWire *theWire) {
   command[1] = 0x2F;
   if (!readWordFromCommand(command, 2, 10, &featureset, 1))
     return false;
-  // Serial.print("Featureset 0x"); Serial.println(featureset, HEX);
+#ifdef MY_DEBUG
+  Serial.print("Featureset 0x"); Serial.println(featureset, HEX);
+#endif
 
   VocAlgorithm_init(&voc_algorithm_params);
 
   return selfTest();
-}
-
-boolean Adafruit_SGP40::begin2(TwoWire *theWire) {
-  if (i2c_dev) {
-    delete i2c_dev; // remove old interface
-  }
-
-  i2c_dev = new Adafruit_I2CDevice(SGP40_I2CADDR_DEFAULT, theWire);
-
-  if (!i2c_dev->begin()) {
-    return false;
-  }
-
-  uint8_t command[2];
-  uint16_t featureset;
-  command[0] = 0x20;
-  command[1] = 0x2F;
-  if (!readWordFromCommand(command, 2, 10, &featureset, 1))
-    return false;
-  // Serial.print("Featureset 0x"); Serial.println(featureset, HEX);
-
-  //VocAlgorithm_init(&voc_algorithm_params);
-
-  return false;
 }
 
 
@@ -178,14 +155,8 @@ uint16_t Adafruit_SGP40::measureRaw(float temperature, float humidity) {
   command[6] = tempticks & 0xFF;
   command[7] = generateCRC(command + 5, 2);
   ;
-  //delay(30);
   if (!readWordFromCommand(command, 8, 30, &reply, 1))
     return 0x0;
-
-  //uint8_t command2[2];
-  //command2[0] = 0x36;
-  //command2[1] = 0x15;
-  //readWordFromCommand(command2, 2, 1);
 
   return reply;
 }
@@ -217,7 +188,7 @@ bool Adafruit_SGP40::readWordFromCommand(uint8_t command[],
 
   for (uint8_t i = 0; i < readlen; i++) {
     uint8_t crc = generateCRC(replybuffer + i * 3, 2);
-#ifdef I2C_DEBUG
+#ifdef MY_DEBUG
     Serial.print("\t\tCRC calced: 0x");
     Serial.print(crc, HEX);
     Serial.print(" vs. 0x");
@@ -229,7 +200,7 @@ bool Adafruit_SGP40::readWordFromCommand(uint8_t command[],
     readdata[i] = replybuffer[i * 3];
     readdata[i] <<= 8;
     readdata[i] |= replybuffer[i * 3 + 1];
-#ifdef I2C_DEBUG
+#ifdef MY_DEBUG
     Serial.print("\t\tRead: 0x");
     Serial.println(readdata[i], HEX);
 #endif
