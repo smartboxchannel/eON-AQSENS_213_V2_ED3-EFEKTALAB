@@ -1,6 +1,6 @@
 # EFEKTA-EINK213-AIR-QUALITY-SENSOR-NRF52840-V2-ED3
 
-//### The author prohibits any subsequent commercial use of this project, its parts.
+
 
 Wireless, battery-operated Mini air quality and weather station. Air quality, temperature, humidity, pressure, weather forecast. Designed on the nRF52833, nRF52840 wireless radio modules. The temperature, humidity and pressure sensor BME280, air quality sensor SGP40 is used The device is powered by CR2477 battery. Power consumption when transmitting data is 8mA, in sleep mode is 35uA (see datasheet SGP40).
 
