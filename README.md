@@ -48,9 +48,6 @@ More info at http://efektalab.com/eink213_ed3
 
 ---
 
-![EFEKTA EINK102 TEMP HUM MICRO SENSOR NRF52 licenses](https://github.com/smartboxchannel/EFEKTA-EINK102-TEMP-HUM-MICRO-SENSOR-NRF52/blob/master/IMAGES/licenses.png)
-
----
 
 ### Instruction
 
