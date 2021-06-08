@@ -33,7 +33,7 @@
 #include "eink213_V2.h"
 #include "imagedata.h"
 #include "einkpaint.h"
-#include "Adafruit_SGP40.h" // !!!Non-standard constants are used for the air quality algorithm!!!
+#include "src/Adafruit_SGP40.h" // !!!Non-standard constants are used for the air quality algorithm!!!
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 // ##############################################################################################################
@@ -50,11 +50,10 @@ Epd epd;
 Adafruit_BME280 bme;
 Adafruit_SGP40 sgp;
 
-int32_t voc_index;
-int32_t old_voc_index = -500;
-int32_t voc_index_Threshold = 10;
+volatile int32_t vocIndex;
+volatile int32_t oldVocIndex = -500;
+const int32_t vocIndexThreshold = 10;
 uint16_t sraw;
-int32_t temp_voc_index;
 
 float last_tmp;
 bool upTemp;
@@ -72,6 +71,7 @@ long last_aq;
 bool upAq;
 bool downAq;
 
+bool learnOK;
 bool mesColorSet;
 #ifdef SEND_RESET_REASON
 bool mesReset;
@@ -105,7 +105,7 @@ bool flag_no_present;
 bool flag_nogateway_mode;
 bool flag_find_parent_process;
 bool nosleep;
-bool change;
+volatile bool change;
 bool Ack_FP;
 bool tch;
 bool hch;
@@ -118,10 +118,7 @@ bool lch;
 bool configMode;
 bool button_flag;
 uint8_t lang;
-uint8_t cpNom;
-uint8_t cpCount;
-uint8_t battSend;
-uint8_t timeSend = 1;
+uint8_t icon_bl;
 uint8_t battery;
 uint8_t old_battery;
 uint8_t err_delivery_beat;
@@ -132,35 +129,48 @@ int16_t pressureInt;
 int16_t pressure_mmInt;
 uint16_t batteryVoltage;
 uint16_t old_batteryVoltage;
-const uint16_t minuteT = 60000;
-uint16_t BATT_TIME;
-uint16_t BATT_COUNT;
-int16_t nRFRSSI;
-int16_t old_nRFRSSI = 127;
+volatile int16_t nRFRSSI;
+volatile int16_t old_nRFRSSI = 127;
 int16_t myid;
 int16_t mypar;
 int16_t old_mypar = -1;
-float temperatureSend;
-float pressureSend;
-float humiditySend;
-float old_temperature;
-float old_humidity;
-float old_pressure;
-float tempThreshold = 0.5; // порог сравнения в предыдущими показаниями температуры
-float humThreshold = 2.5; // порог сравнения в предыдущими показаниями влажности
-float pressThreshold = 1.0; // порог сравнения в предыдущими показаниями влажности
+volatile float temperatureSend;
+volatile float pressureSend;
+volatile float humiditySend;
+volatile float old_temperature;
+volatile float old_humidity;
+volatile float old_pressure;
+const float tempThreshold = 0.5; // порог сравнения в предыдущими показаниями температуры
+const float humThreshold = 2.5; // порог сравнения в предыдущими показаниями влажности
+const float pressThreshold = 1.0; // порог сравнения в предыдущими показаниями влажности
 float batteryVoltageF;
 
 uint32_t configMillis;
 uint32_t previousMillis;
-uint32_t SLEEP_TIME;
+uint32_t sleepTime;
 uint32_t stopTimer;
 uint32_t startTimer;
-uint32_t PRECISION_TIME_WDT;
-const uint32_t SLEEP_TIME_WDT = 3000;
-uint32_t sleepTimeCount;
-const uint8_t fastView = 5;
-uint8_t checkFast;
+uint32_t precisionTimeWDT;
+const uint32_t sleepTimeWDT = 3000;
+const uint32_t minuteT = 60000;
+uint32_t BATT_TIME;
+volatile uint32_t BATT_COUNT;
+uint32_t cpNom;
+volatile uint32_t cpCount;
+uint32_t battSend;
+const uint32_t timeSend = 1;
+volatile uint32_t sleepTimeCount;
+uint32_t baseLineSaveClock;
+volatile uint32_t baseLineSaveCount;
+uint32_t periodTimer;
+unsigned char oneStateBytes[4];
+int32_t oneState;
+unsigned char twoStateBytes[4];
+int32_t twoState;
+const uint8_t fastView = 3;
+volatile uint8_t checkFast;
+//uint16_t learningTime;
+volatile uint16_t learningCount;
 // ##############################################################################################################
 
 
@@ -183,6 +193,10 @@ int16_t mtwr;
 #ifdef SEND_RESET_REASON
 #define RESET_REASON_ID 105
 #endif
+#define DEBMES_1 121
+#define DEBMES_2 122
+MyMessage debMsg1(DEBMES_1, V_VAR1);
+MyMessage debMsg2(DEBMES_2, V_VAR1);
 MyMessage sqMsg(SIGNAL_Q_ID, V_VAR1);
 MyMessage bvMsg(BATTERY_VOLTAGE_ID, V_VAR1);
 // ##############################################################################################################
@@ -326,7 +340,7 @@ void presentation()
       }
 
       if (mesAq == false) {
-        check = present(AQ_CHILD_ID, S_HUM, "AIR QUALITY (VOC)");
+        check = present(AQ_CHILD_ID, S_AIR_QUALITY, "AIR QUALITY (VOC)");
         if (!check) {
           needPresent = true;
           wait(shortWait * 10);
@@ -474,13 +488,14 @@ void setup()
 
   CORE_DEBUG(PSTR("MyS: SEND CONFIG PARAMETERS\n"));
   sendAfterResTask = true;
-  sleepTimeCount = SLEEP_TIME;
+  sleepTimeCount = sleepTime;
   metric = getControllerConfig().isMetric;
   transportDisable();
   wait(20);
   bme_initAsleep();
   wait(50);
   sgp.begin();
+  loadBaseLine();
   wait(50);
   interrupt_Init();
   wait(20);
@@ -560,7 +575,7 @@ void loop() {
                 updateinkclear = true;
                 buttIntStatus = 0;
                 change = true;
-                sleepTimeCount = SLEEP_TIME;
+                sleepTimeCount = sleepTime;
               }
             }
           }
@@ -579,9 +594,8 @@ void loop() {
               }
               sleepTimeCount = 0;
               readSensor();
-              change = false;
               sendData();
-              wait(20);
+              //wait(20);
               eInkUpdate();
               change = false;
               button_flag = false;
@@ -600,9 +614,8 @@ void loop() {
               wait(shortWait);
               sleepTimeCount = 0;
               readSensor();
-              change = false;
               sendData();
-              wait(20);
+              //wait(20);
               eInkUpdate();
               change = false;
               button_flag = false;
@@ -634,9 +647,8 @@ void loop() {
               reseteinkset();
               sleepTimeCount = 0;
               readSensor();
-              change = false;
               sendData();
-              wait(20);
+              //wait(20);
               eInkUpdate();
               change = false;
               button_flag = false;
@@ -644,39 +656,37 @@ void loop() {
               nosleep = false;
             }
           }
-        } else {
-          sleepTimeCount++;
-          if (sleepTimeCount >= SLEEP_TIME) {
-            sleepTimeCount = 0;
-
+        } else if(buttIntStatus == 0){
+          if (sleepTimeCount == sleepTime) {
             readSensor();
             if (change == true) {
               sendData();
-              wait(20);
+              //delay(200);
               eInkUpdate();
               change = false;
             }
             nosleep = false;
-          } else {
+            sleepTimeCount = 0;
+          } else if(sleepTimeCount < sleepTime) {
             readSGP();
             if (change == true) {
               sendData();
-              wait(100);
+              //delay(200);
               eInkUpdate();
               change = false;
             }
             nosleep = false;
           }
+          sleepTimeCount++;
         }
-      } else {
+      } else if(configMode == true){
         if (millis() - configMillis > 20000) {
           transportDisable(); // вроде потому что один фиг сразу в сон? ....не все таки раскоментить потому что сон не сразу а сначала обновление экрана
           configMode = false;
           sleepTimeCount = 0;
           readSensor();
-          change = false;
           sendData();
-          wait(20);
+          //wait(20);
           eInkUpdate();
           change = false;
           button_flag = false;
@@ -730,7 +740,7 @@ void loop() {
               updateinkclear = true;
               buttIntStatus = 0;
               change = true;
-              sleepTimeCount = SLEEP_TIME;
+              sleepTimeCount = sleepTime;
             }
           }
         }
@@ -749,9 +759,8 @@ void loop() {
             }
             sleepTimeCount = 0;
             readSensor();
-            change = false;
             sendData();
-            wait(20);
+            //wait(20);
             eInkUpdate();
             change = false;
             button_flag = false;
@@ -769,7 +778,7 @@ void loop() {
             check_parent();
             cpCount = 0;
             change = true;
-            sleepTimeCount = SLEEP_TIME;
+            sleepTimeCount = sleepTime;
             nosleep = false;
           }
           if ((millis() - previousMillis > 8000) && (millis() - previousMillis <= 11000) && button_flag == true)
@@ -784,9 +793,8 @@ void loop() {
             reseteinkset();
             sleepTimeCount = 0;
             readSensor();
-            change = false;
             sendData();
-            wait(20);
+            //wait(20);
             eInkUpdate();
             change = false;
             button_flag = false;
@@ -795,9 +803,8 @@ void loop() {
           }
         }
 
-      } else {
-        sleepTimeCount++;
-        if (sleepTimeCount >= SLEEP_TIME) {
+      } else if (buttIntStatus == 0) {
+        if (sleepTimeCount == sleepTime) {
           sleepTimeCount = 0;
           cpCount++;
           if (cpCount >= cpNom) {
@@ -808,15 +815,15 @@ void loop() {
           readSensor();
           if (change == true) {
             sendData();
-            wait(100);
+            //wait(100);
             eInkUpdate();
             change = false;
           }
-        } else {
+        } else if(sleepTimeCount < sleepTime) {
           readSGP();
           if (change == true) {
             sendData();
-            wait(100);
+            //wait(100);
             eInkUpdate();
             change = false;
           }
@@ -824,6 +831,7 @@ void loop() {
         if (cpCount < cpNom) {
           nosleep = false;
         }
+        sleepTimeCount++;
       }
     }
   }
@@ -844,27 +852,20 @@ void loop() {
     transportDisable();
     wdt_nrfReset();
 
-    uint32_t periodTimer;
-    uint32_t quotientTimer;
     stopTimer = millis();
     if (stopTimer < startTimer) {
       periodTimer = (4294967295 - startTimer) + stopTimer;
     } else {
       periodTimer = stopTimer - startTimer;
     }
-    if (periodTimer >= SLEEP_TIME_WDT) {
-      quotientTimer = periodTimer / SLEEP_TIME_WDT;
-      if (quotientTimer == 0) {
-        PRECISION_TIME_WDT = periodTimer - SLEEP_TIME_WDT;
-        sleepTimeCount++;
-      } else {
-        PRECISION_TIME_WDT = periodTimer - SLEEP_TIME_WDT * quotientTimer;
-        sleepTimeCount = sleepTimeCount + quotientTimer;
-      }
+    if (periodTimer >= sleepTimeWDT) {
+      precisionTimeWDT = sleepTimeWDT;
     } else {
-      PRECISION_TIME_WDT = SLEEP_TIME_WDT - periodTimer;
+      precisionTimeWDT = sleepTimeWDT - periodTimer;
     }
-    hwSleep(PRECISION_TIME_WDT);
+    //send(debMsg1.set(sleepTimeCount));
+    //send(debMsg2.set(precisionTimeWDT));
+    hwSleep(precisionTimeWDT);
     startTimer = millis();
     nosleep = true;
     wdt_nrfReset();
@@ -954,7 +955,7 @@ void eInkUpdate() {
   paint.Clear(opposite_colorPrint);
   displayTemp(temperatureSend, metric);
   displayForecast(forecast);
-  displayAQ(voc_index);
+  displayAQ(vocIndex);
   displayPres(pressureSend);
   displayHum(humiditySend);
   display_Icons();
@@ -2006,6 +2007,40 @@ void displayAQ(int32_t aq_temp) {
 #endif
   }
 
+  if (icon_bl == 0) {
+
+    if (learningCount <= 720 && learningCount > 660) {
+      DrawImageWH(&paint, 38, 222, NOSAVE12, 16, 15, colorPrint);
+    } else if (learningCount <= 660 && learningCount > 600) {
+      DrawImageWH(&paint, 38, 222, NOSAVE11, 16, 15, colorPrint);
+    } else if (learningCount <= 600 && learningCount > 540) {
+      DrawImageWH(&paint, 38, 222, NOSAVE10, 16, 15, colorPrint);
+    } else if (learningCount <= 540 && learningCount > 480) {
+      DrawImageWH(&paint, 38, 222, NOSAVE9, 16, 15, colorPrint);
+    } else if (learningCount <= 480 && learningCount > 420) {
+      DrawImageWH(&paint, 38, 222, NOSAVE8, 16, 15, colorPrint);
+    } else if (learningCount <= 420 && learningCount > 360) {
+      DrawImageWH(&paint, 38, 222, NOSAVE7, 16, 15, colorPrint);
+    } else if (learningCount <= 360 && learningCount > 300) {
+      DrawImageWH(&paint, 38, 222, NOSAVE6, 16, 15, colorPrint);
+    } else if (learningCount <= 300 && learningCount > 240) {
+      DrawImageWH(&paint, 38, 222, NOSAVE5, 16, 15, colorPrint);
+    } else if (learningCount <= 240 && learningCount > 180) {
+      DrawImageWH(&paint, 38, 222, NOSAVE4, 16, 15, colorPrint);
+    } else if (learningCount <= 180 && learningCount > 120) {
+      DrawImageWH(&paint, 38, 222, NOSAVE3, 16, 15, colorPrint);
+    } else if (learningCount <= 120 && learningCount > 60) {
+      DrawImageWH(&paint, 38, 222, NOSAVE2, 16, 15, colorPrint);
+    } else if (learningCount <= 60 && learningCount > 0) {
+      DrawImageWH(&paint, 38, 222, NOSAVE1, 16, 15, colorPrint);
+    } else {
+      //DrawImageWH(&paint, 38, 222, NOSAVE, 16, 15, colorPrint);
+    }
+  } else if (icon_bl == 1) {
+    DrawImageWH(&paint, 38, 222, LOAD, 16, 15, colorPrint);
+  } else if (icon_bl == 2) {
+    DrawImageWH(&paint, 38, 222, SAVE, 16, 15, colorPrint);
+  }
 
   if (aq_temp >= 100) {
 
@@ -2692,27 +2727,83 @@ void readSGP() {
   checkFast++;
   //wait(10);
   sraw = sgp.measureRaw(temperatureSend, humiditySend);
-  hwSleep(110);
+  //hwSleep(30);
   //wait(10);
-  voc_index = sgp.measureVocIndex(temperatureSend, humiditySend);
+  vocIndex = sgp.measureVocIndex(temperatureSend, humiditySend);
   sgp.heaterOff();
 
   if (checkFast == fastView) {
     checkFast = 0;
-    if ((voc_index != 0) && (voc_index >= (old_voc_index + 30))) {
-      old_voc_index = voc_index;
+    if ((vocIndex != 0) && (vocIndex >= (oldVocIndex + 30))) {
+      oldVocIndex = vocIndex;
       change = true;
       ach = true;
+      sleepTimeCount = 0;
     }
   }
 }
 
 
+void saveBaseLine() {
+  baseLineSaveCount++;
+  if (baseLineSaveCount == baseLineSaveClock) {
+  sgp.get_States();
+  
+    saveState(171, sgp.stat1bytes[0]);
+    saveState(172, sgp.stat1bytes[1]);
+    saveState(173, sgp.stat1bytes[2]);
+    saveState(174, sgp.stat1bytes[3]);
+
+    saveState(175, sgp.stat2bytes[0]);
+    saveState(176, sgp.stat2bytes[1]);
+    saveState(177, sgp.stat2bytes[2]);
+    saveState(178, sgp.stat2bytes[3]);
+  
+  baseLineSaveCount = 0;
+  if (loadState(170) != 100) {
+    saveState(170, 100);
+  }
+  icon_bl = 2;
+  }
+  //send(debMsg1.set(sgp.stat1));
+  //send(debMsg2.set(sgp.stat2));
+}
+
+
+void loadBaseLine() {
+  if (loadState(170) == 100) {
+
+    //oneStateBytes[4];
+    oneStateBytes[0] = loadState(171);
+    oneStateBytes[1] = loadState(172);
+    oneStateBytes[2] = loadState(173);
+    oneStateBytes[3] = loadState(174);
+    oneState = (int32_t&)oneStateBytes;
+
+    //twoStateBytes[4];
+    twoStateBytes[0] = loadState(175);
+    twoStateBytes[1] = loadState(176);
+    twoStateBytes[2] = loadState(177);
+    twoStateBytes[3] = loadState(178);
+    twoState = (int32_t&)twoStateBytes;
+
+    sgp.set_States(oneState, twoState);
+    icon_bl = 1;
+    learnOK = true;
+    //send(debMsg1.set(oneState));
+    //send(debMsg2.set(twoState));
+  } else {
+    learnOK = false;
+  }
+}
+
+
+
 void readSensor() {
   //hwSleep(200);
-  //if (sendAfterResTask == true) {
-  //  change = true;
-  //}
+  if (sendAfterResTask == true) {
+    change = true;
+  }
   checkFast = 0;
   wait(5);
   bme.takeForcedMeasurement();
@@ -2720,14 +2811,33 @@ void readSensor() {
   temperatureSend = bme.readTemperature();
   humiditySend = bme.readHumidity();
   pressureSend = bme.readPressure();
-
+  wait(50);
 
   readSGP();
 
-  if (abs(voc_index - old_voc_index) >= voc_index_Threshold) {
-    old_voc_index = voc_index;
+  if (learnOK == false) {
+    learningCount--;
+    if (learningCount == 660 || learningCount == 600 || learningCount == 540 || learningCount == 480 || learningCount == 420 || learningCount == 360 || learningCount == 300 || learningCount == 240 || learningCount == 180 || learningCount == 120 || learningCount == 60) {
+      change = true;
+    }
+    if (learningCount == 0) {
+      learnOK = true;
+      change = true;
+    }
+  } else {
+    saveBaseLine();
+  }
+
+  if (abs(vocIndex - oldVocIndex)  >= vocIndexThreshold) {
+    oldVocIndex = vocIndex;
     change = true;
     ach = true;
+  }
+
+  if (abs(temperatureSend - old_temperature) >= tempThreshold) {
+    old_temperature = temperatureSend;
+    change = true;
+    tch = true;
   }
 
   temperatureInt = round(temperatureSend);
@@ -2857,8 +2967,8 @@ void sendData() {
     }
 
     if (ach == true) {
-      static MyMessage aqMsg(AQ_CHILD_ID, V_VAR1);
-      check = send(aqMsg.set(voc_index));
+      static MyMessage aqMsg(AQ_CHILD_ID, V_LEVEL);
+      check = send(aqMsg.set(vocIndex));
       if (check == true) {
         ach = false;
       } else {
@@ -2992,7 +3102,7 @@ void resetBeforePresent() {
   changeB = true;
   changeC = true;
 
-  old_voc_index = 0;
+  oldVocIndex = 0;
   old_temperature = 0.0;
   old_humidity = 0.0;
   old_pressure = 0.0;
@@ -3042,23 +3152,17 @@ void sendResetReason() {
 //########################################## SET ###################################################
 void timeConf() {
 
-  SLEEP_TIME = (timeSend * minuteT / SLEEP_TIME_WDT);
+  sleepTime = ((timeSend * minuteT) / sleepTimeWDT);
 
-  BATT_TIME = (battSend * 60 / timeSend);
-
-  cpNom = (60 / timeSend);
-
-  CORE_DEBUG(PSTR("SLEEP_TIME: %d\n"), SLEEP_TIME);
-
-
-
-  SLEEP_TIME = (timeSend * minuteT / SLEEP_TIME_WDT);
-
-  BATT_TIME = (battSend * 60 / timeSend);
+  BATT_TIME = ((battSend * 60) / timeSend);
 
   cpNom = (120 / timeSend);
 
-  CORE_DEBUG(PSTR("SLEEP_TIME: %d\n"), SLEEP_TIME);
+  baseLineSaveClock = (60 * 4);
+
+  learningCount = (60 * (uint16_t)VocAlgorithm_TAU_MEAN_VARIANCE_HOURS);
+
+  CORE_DEBUG(PSTR("sleepTime: %d\n"), sleepTime);
 }
 
 
@@ -3165,13 +3269,13 @@ void lqSend() {
     if (nRFRSSI > 100) {
       nRFRSSI = 100;
     }
-
+/*
     if ((nRFRSSI >= 90) && (NRF_RADIO->TXPOWER == 0x8UL)) {
       NRF_RADIO->TXPOWER = 0x4UL;
     } else if ((nRFRSSI <= 25) && (NRF_RADIO->TXPOWER == 0x4UL))  {
       NRF_RADIO->TXPOWER = 0x8UL;
     }
-
+*/
     if (nRFRSSI != old_nRFRSSI) {
       lch = true;
       check = send(sqMsg.set(nRFRSSI));
@@ -3223,7 +3327,7 @@ void receive(const MyMessage & message)
       sendAfterResTask = true;
       changeB = true;
       timeConf();
-      sleepTimeCount = SLEEP_TIME;
+      sleepTimeCount = sleepTime;
     }
   }
 
@@ -3236,7 +3340,7 @@ void receive(const MyMessage & message)
       change = true;
       sendAfterResTask = true;
       changeC = true;
-      sleepTimeCount = SLEEP_TIME;
+      sleepTimeCount = sleepTime;
     }
   }
 }
@@ -3277,8 +3381,9 @@ void gpiote_event_handler(uint32_t event_pins_low_to_high, uint32_t event_pins_h
 // #                                                      FRESET                                                #
 // ##############################################################################################################
 void new_device() {
-  hwWriteConfig(EEPROM_NODE_ID_ADDRESS, 255);
-  saveState(200, 255);
+  hwWriteConfig(EEPROM_NODE_ID_ADDRESS, 255);  // delete network id in mysensors routing table
+  saveState(200, 255);  // delete network id in user area
+  saveState(170, 255); // delete sgp40 base line
   hwReboot();
 }
 
@@ -3451,7 +3556,7 @@ void update_Happy_transport() {
   present_only_parent();
   wait(shortWait * 5);
   flag_update_transport_param = false;
-  sleepTimeCount = SLEEP_TIME;
+  sleepTimeCount = sleepTime;
   BATT_COUNT = BATT_TIME;
   change = true;
 }

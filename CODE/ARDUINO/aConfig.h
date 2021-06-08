@@ -28,8 +28,8 @@
 #ifndef LANG_RU
 #define LANG_EN
 #endif
-#define SN "EFEKTA Air Quality Sensor"
-#define SV "0.96"
+#define SN "eON Air Quality Sensor"
+#define SV "0.99"
 #define MY_RADIO_NRF5_ESB
 #define MY_NRF5_ESB_PA_LEVEL (0x8UL)
 //#define MY_PASSIVE_NODE

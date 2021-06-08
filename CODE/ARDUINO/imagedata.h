@@ -147,5 +147,20 @@ extern const unsigned char AQST5[];
 extern const unsigned char AQST5EN[];
 extern const unsigned char AQST6[];
 extern const unsigned char AQST6EN[];
+extern const unsigned char NOSAVE[];
+extern const unsigned char NOSAVE1[];
+extern const unsigned char NOSAVE2[];
+extern const unsigned char NOSAVE3[];
+extern const unsigned char NOSAVE4[];
+extern const unsigned char NOSAVE5[];
+extern const unsigned char NOSAVE6[];
+extern const unsigned char NOSAVE7[];
+extern const unsigned char NOSAVE8[];
+extern const unsigned char NOSAVE9[];
+extern const unsigned char NOSAVE10[];
+extern const unsigned char NOSAVE11[];
+extern const unsigned char NOSAVE12[];
+extern const unsigned char SAVE[];
+extern const unsigned char LOAD[];
 
 /* FILE END */
