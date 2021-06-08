@@ -2,7 +2,7 @@
 
 
 
-Wireless, battery-operated Mini air quality and weather station. Air quality, temperature, humidity, pressure, weather forecast. Designed on the nRF52833, nRF52840 wireless radio modules. The temperature, humidity and pressure sensor BME280, air quality sensor SGP40 is used The device is powered by CR2477 battery. Power consumption when transmitting data is 8mA, in sleep mode is 35uA (see datasheet SGP40).
+Wireless, battery-operated Mini air quality and weather station. Air quality, temperature, humidity, pressure, weather forecast. Designed on the RF52810, nRF52811, nRF52832, nRF52833, nRF52840 wireless radio modules. The temperature, humidity and pressure sensor BME280, temperature and pressure sensor BMP280, temperature and humidity sensor SHTC3, light sensor MAX44009, air quality sensor SGP40 is used The device is powered by CR2477 battery. Power consumption when transmitting data is 8mA, in sleep mode is 325uA-35uA (see datasheet SGP40).
 
 #### GDEH0213B72 (GDEH0213B73, Waveshare V2): https://ali.ski/05GbQ
 
