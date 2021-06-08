@@ -11,7 +11,7 @@ Wireless, battery-operated Mini air quality and weather station. Air quality, te
 
 (New FCC CE RoHs Certificated Compact (18.5×12.5×2mm) and Flexible ultra-low power wireless BLE 5.0 Module based on nRF52840 SoCs)
 
-#### SGP40: https://ali.ski/3sbUP   https://ali.ski/9caWj
+#### SGP40: https://ali.ski/3sbUP  |  https://ali.ski/9caWj
 
 #### Don't donate to me, it doesn't work in this world: https://paypal.me/efektalab , just buy
 
