@@ -35,7 +35,16 @@
 #include "einkpaint.h"
 #include "src/Adafruit_SGP40.h" // !!!Non-standard constants are used for the air quality algorithm!!!
 #include <Adafruit_Sensor.h>
+#ifdef BME280
 #include <Adafruit_BME280.h>
+#define SEALEVELPRESSURE_HPA (1013.25)
+Adafruit_BME280 bme;
+#else
+#include <Adafruit_BMP280.h>
+Adafruit_BMP280 bme;
+#include "Adafruit_SHTC3.h"
+Adafruit_SHTC3 sensor = Adafruit_SHTC3();
+#endif
 // ##############################################################################################################
 
 
@@ -46,8 +55,6 @@
 unsigned char image[4000];
 Paint paint(image, 0, 0);
 Epd epd;
-#define SEALEVELPRESSURE_HPA (1013.25)
-Adafruit_BME280 bme;
 Adafruit_SGP40 sgp;
 
 volatile int32_t vocIndex;
@@ -135,6 +142,7 @@ int16_t myid;
 int16_t mypar;
 int16_t old_mypar = -1;
 volatile float temperatureSend;
+volatile float temperatureSend2;
 volatile float pressureSend;
 volatile float humiditySend;
 volatile float old_temperature;
@@ -243,7 +251,7 @@ static app_gpiote_user_id_t m_gpiote_user_id;
 
 
 void preHwInit() {
-  pinMode(PIN_BUTTON, INPUT);
+  pinMode(PIN_BUTTON, OUTPUT);
 }
 
 void before() {
@@ -455,6 +463,7 @@ void presentation()
 
 void setup()
 {
+  hwSleep(1000);
   config_Happy_node();
   CORE_DEBUG(PSTR("MyS: CONFIG HAPPY NODE\n"));
   if (flag_nogateway_mode == false) {
@@ -490,6 +499,7 @@ void setup()
   sendAfterResTask = true;
   sleepTimeCount = sleepTime;
   metric = getControllerConfig().isMetric;
+  metric = false;
   transportDisable();
   wait(20);
   bme_initAsleep();
@@ -656,7 +666,7 @@ void loop() {
               nosleep = false;
             }
           }
-        } else if(buttIntStatus == 0){
+        } else if (buttIntStatus == 0) {
           if (sleepTimeCount == sleepTime) {
             readSensor();
             if (change == true) {
@@ -667,7 +677,7 @@ void loop() {
             }
             nosleep = false;
             sleepTimeCount = 0;
-          } else if(sleepTimeCount < sleepTime) {
+          } else if (sleepTimeCount < sleepTime) {
             readSGP();
             if (change == true) {
               sendData();
@@ -679,7 +689,7 @@ void loop() {
           }
           sleepTimeCount++;
         }
-      } else if(configMode == true){
+      } else if (configMode == true) {
         if (millis() - configMillis > 20000) {
           transportDisable(); // вроде потому что один фиг сразу в сон? ....не все таки раскоментить потому что сон не сразу а сначала обновление экрана
           configMode = false;
@@ -819,7 +829,7 @@ void loop() {
             eInkUpdate();
             change = false;
           }
-        } else if(sleepTimeCount < sleepTime) {
+        } else if (sleepTimeCount < sleepTime) {
           readSGP();
           if (change == true) {
             sendData();
@@ -925,12 +935,12 @@ void displayStart() {
 
   // ###################################           Especially for            ################################### //
 #ifdef ESPECIALLY
-  DrawImageWH(&paint, 15, 35, Especially, 105, 180, colorPrint);
+  DrawImageWH(&paint, 8, 0, Especially, 122, 250, colorPrint);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
   epd.Clear(opposite_colorPrint, PART);
   epd.Display(paint.GetImage(), PART);
-  hwSleep(7000);
+  hwSleep(4000);
   epd.Clear(opposite_colorPrint, PART);
   paint.Clear(opposite_colorPrint);
 #endif
@@ -953,7 +963,11 @@ void eInkUpdate() {
   wdt_nrfReset();
   epd.Init(PART);
   paint.Clear(opposite_colorPrint);
-  displayTemp(temperatureSend, metric);
+  if (!metric) {
+  displayTemp(temperatureSend2, metric);
+  }else{
+   displayTemp(temperatureSend, metric); 
+  }
   displayForecast(forecast);
   displayAQ(vocIndex);
   displayPres(pressureSend);
@@ -1906,7 +1920,7 @@ void displayPres(float pres) {
 
 
 void displayForecast(uint8_t f) {
-  // f=2;
+  //f=1;
 #ifdef LANG_RU
   switch (f) {
     case 0:
@@ -1962,7 +1976,7 @@ void displayAQ(int32_t aq_temp) {
 #endif
 
 
-  //aq = 200;
+  //aq_temp = 45;
   if (aq_temp >= 300) {
 #ifdef LANG_EN
     DrawImageWH(&paint, 22, 60, AQST6EN, 13, 130, colorPrint);
@@ -2712,6 +2726,7 @@ void reportBattInk() {
 // #####################################################
 
 void bme_initAsleep() {
+#ifdef BME280
   if (! bme.begin(&Wire)) {
     while (1);
   }
@@ -2721,6 +2736,18 @@ void bme_initAsleep() {
                   Adafruit_BME280::SAMPLING_X1, // pressure
                   Adafruit_BME280::SAMPLING_X1,  // humidity
                   Adafruit_BME280::FILTER_OFF);
+  wait(500);
+#else
+  if (! bme.begin()) {
+    while (1);
+  }
+  bme.setSampling(Adafruit_BMP280::MODE_FORCED,     /* Operating Mode. */
+                  Adafruit_BMP280::SAMPLING_X1,     /* Temp. oversampling */
+                  Adafruit_BMP280::SAMPLING_X1,    /* Pressure oversampling */
+                  Adafruit_BMP280::FILTER_OFF);
+  wait(300);
+  sensor.begin();
+#endif
 }
 
 void readSGP() {
@@ -2747,8 +2774,8 @@ void readSGP() {
 void saveBaseLine() {
   baseLineSaveCount++;
   if (baseLineSaveCount == baseLineSaveClock) {
-  sgp.get_States();
-  
+    sgp.get_States();
+
     saveState(171, sgp.stat1bytes[0]);
     saveState(172, sgp.stat1bytes[1]);
     saveState(173, sgp.stat1bytes[2]);
@@ -2758,12 +2785,12 @@ void saveBaseLine() {
     saveState(176, sgp.stat2bytes[1]);
     saveState(177, sgp.stat2bytes[2]);
     saveState(178, sgp.stat2bytes[3]);
-  
-  baseLineSaveCount = 0;
-  if (loadState(170) != 100) {
-    saveState(170, 100);
-  }
-  icon_bl = 2;
+
+    baseLineSaveCount = 0;
+    if (loadState(170) != 100) {
+      saveState(170, 100);
+    }
+    icon_bl = 2;
   }
   //send(debMsg1.set(sgp.stat1));
   //send(debMsg2.set(sgp.stat2));
@@ -2806,12 +2833,21 @@ void readSensor() {
   }
   checkFast = 0;
   wait(5);
+#ifdef BME280
   bme.takeForcedMeasurement();
-  wait(5);
   temperatureSend = bme.readTemperature();
   humiditySend = bme.readHumidity();
   pressureSend = bme.readPressure();
-  wait(50);
+#else
+  bme.takeForcedMeasurement();
+  pressureSend = bme.readPressure();
+  wait(10);
+  sensors_event_t humidity, temp;
+  sensor.getEvent(&humidity, &temp);
+  temperatureSend = temp.temperature;
+  humiditySend = humidity.relative_humidity;
+#endif
+  wait(10);
 
   readSGP();
 
@@ -2849,7 +2885,7 @@ void readSensor() {
   }
 
   if (!metric) {
-    temperatureSend = temperatureSend * 9.0 / 5.0 + 32.0;
+    temperatureSend2 = temperatureSend * 9.0 / 5.0 + 32.0;
   }
 
   if (abs(temperatureSend - old_temperature) >= tempThreshold) {
@@ -2920,7 +2956,11 @@ void sendData() {
 
     if (tch == true) {
       static MyMessage temperatureMsg(TEMP_CHILD_ID, V_TEMP);
-      check = send(temperatureMsg.set(temperatureSend, 1));
+      if (!metric) {
+      check = send(temperatureMsg.set(temperatureSend2, 1));
+      }else{
+       check = send(temperatureMsg.set(temperatureSend, 1)); 
+      }
       if (check == true) {
         tch = false;
       } else {
@@ -3269,13 +3309,13 @@ void lqSend() {
     if (nRFRSSI > 100) {
       nRFRSSI = 100;
     }
-/*
-    if ((nRFRSSI >= 90) && (NRF_RADIO->TXPOWER == 0x8UL)) {
-      NRF_RADIO->TXPOWER = 0x4UL;
-    } else if ((nRFRSSI <= 25) && (NRF_RADIO->TXPOWER == 0x4UL))  {
-      NRF_RADIO->TXPOWER = 0x8UL;
-    }
-*/
+    /*
+        if ((nRFRSSI >= 90) && (NRF_RADIO->TXPOWER == 0x8UL)) {
+          NRF_RADIO->TXPOWER = 0x4UL;
+        } else if ((nRFRSSI <= 25) && (NRF_RADIO->TXPOWER == 0x4UL))  {
+          NRF_RADIO->TXPOWER = 0x8UL;
+        }
+    */
     if (nRFRSSI != old_nRFRSSI) {
       lch = true;
       check = send(sqMsg.set(nRFRSSI));

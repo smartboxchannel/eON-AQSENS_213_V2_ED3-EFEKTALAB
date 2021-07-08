@@ -25,11 +25,12 @@
 
 //#define MY_DEBUG
 //#define LANG_RU // If this is not used the English localization will be displayed.
+//#define BME280
 #ifndef LANG_RU
 #define LANG_EN
 #endif
 #define SN "eON Air Quality Sensor"
-#define SV "0.99"
+#define SV "0.992"
 #define MY_RADIO_NRF5_ESB
 #define MY_NRF5_ESB_PA_LEVEL (0x8UL)
 //#define MY_PASSIVE_NODE
@@ -39,3 +40,4 @@
 #define ESPECIALLY
 #define SEND_RESET_REASON
 #define MY_RESET_REASON_TEXT
+//#define PIN_BUTTON           (23)// v1
