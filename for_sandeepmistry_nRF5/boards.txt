@@ -1,1 +1,42 @@
 
+
+menu.chip=Chip
+menu.softdevice=Softdevice
+menu.version=Version
+menu.lfclk=Low Frequency Clock
+menu.board_variant=Board Variant
+menu.reset=Reset
+
+
+# Efekta MWS213 V2 nRF52840 variants
+###################
+
+Efekta_mws213_v2_nRF52840.name=EFEKTA MWS213 V2 nRF52840
+
+Efekta_mws213_v2_nRF52840.upload.tool=sandeepmistry:openocd
+Efekta_mws213_v2_nRF52840.upload.target=nrf52
+Efekta_mws213_v2_nRF52840.upload.maximum_size=1048576
+
+Efekta_mws213_v2_nRF52840.bootloader.tool=sandeepmistry:openocd
+
+Efekta_mws213_v2_nRF52840.build.mcu=cortex-m4
+Efekta_mws213_v2_nRF52840.build.f_cpu=16000000
+Efekta_mws213_v2_nRF52840.build.board=EFEKTA_MWS213_V2
+Efekta_mws213_v2_nRF52840.build.core=nRF5
+Efekta_mws213_v2_nRF52840.build.variant=EFEKTA_MWS213_V2
+Efekta_mws213_v2_nRF52840.build.variant_system_lib=
+Efekta_mws213_v2_nRF52840.build.extra_flags=-DNRF52840_XXAA
+Efekta_mws213_v2_nRF52840.build.float_flags=-mfloat-abi=hard -mfpu=fpv4-sp-d16
+Efekta_mws213_v2_nRF52840.build.ldscript=nrf52840_xxaa.ld
+
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfxo=Crystal Oscillator
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfxo.build.lfclk_flags=-DUSE_LFXO
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfrc=RC Oscillator
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfrc.build.lfclk_flags=-DUSE_LFRC
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfsynt=Synthesized
+Efekta_mws213_v2_nRF52840.menu.lfclk.lfsynt.build.lfclk_flags=-DUSE_LFSYNT
+
+Efekta_mws213_v2_nRF52840.menu.reset.notenable=Don't enable
+Efekta_mws213_v2_nRF52840.menu.reset.notenable.build.reset_flags=
+Efekta_mws213_v2_nRF52840.menu.reset.enabled=Enable
+Efekta_mws213_v2_nRF52840.menu.reset.enabled.build.reset_flags=-DCONFIG_GPIO_AS_PINRESET
