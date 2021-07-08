@@ -251,7 +251,7 @@ static app_gpiote_user_id_t m_gpiote_user_id;
 
 
 void preHwInit() {
-  pinMode(PIN_BUTTON, OUTPUT);
+  pinMode(PIN_BUTTON, INPUT);
 }
 
 void before() {
