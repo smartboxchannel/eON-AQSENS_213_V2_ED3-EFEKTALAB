@@ -30,9 +30,9 @@
 #define LANG_EN
 #endif
 #define SN "eON Air Quality Sensor"
-#define SV "0.992"
+#define SV "0.994"
 #define MY_RADIO_NRF5_ESB
-#define MY_NRF5_ESB_PA_LEVEL (0x8UL)
+#define MY_NRF5_ESB_PA_LEVEL (0x4UL)
 //#define MY_PASSIVE_NODE
 //#define MY_NODE_ID 151
 //#define MY_NRF5_ESB_MODE (NRF5_1MBPS)
