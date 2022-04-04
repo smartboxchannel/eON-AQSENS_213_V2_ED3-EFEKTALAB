@@ -8,6 +8,10 @@ Wireless, battery-operated Mini air quality and weather station. Air quality, te
 
 ### You can make your own pcb here - https://www.pcbway.com/setinvite.aspx?inviteid=550959
 
+https://hackaday.io/project/180248-eon-indoor-air-quality-sensor
+---
+
+
 #### GDEH0213B72 (GDEH0213B73, Waveshare V2): https://ali.ski/05GbQ
 
 (250x122,2.13inch E-Ink raw display panel Without PCB Communicate via SPI interface)
